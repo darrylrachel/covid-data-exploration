@@ -1,3 +1,8 @@
+/*
+Covid 19 Data Exploration 
+Skills used: Joins, CTE's, Temp Tables, Windows Functions, Aggregate Functions, Creating Views, Converting Data Types
+*/
+
 SELECT *
 FROM covid_deaths
 ORDER BY 3,4;
@@ -66,8 +71,14 @@ SELECT location, `date`, total_cases, new_cases, total_deaths, population
   order by 1,2;
   */
   
-  
-  
+  -- Total population vs vaccination
+  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+    FROM covid_deaths dea
+    JOIN covid_vaccinations vac
+      ON dea.location = vac.location
+      AND dea.date = vac.date
+  WHERE dea.continent IS NOT NULL
+  ORDER BY 1,2,3;
   
   
   
