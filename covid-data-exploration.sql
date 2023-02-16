@@ -72,15 +72,61 @@ SELECT location, `date`, total_cases, new_cases, total_deaths, population
   */
   
   -- Total population vs vaccination
-  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(vac.new_vaccinations, DECIMAL)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.`date`) AS rolling_count/*,
+  (rolling_count / population) * 100 */
     FROM covid_deaths dea
     JOIN covid_vaccinations vac
       ON dea.location = vac.location
       AND dea.date = vac.date
   WHERE dea.continent IS NOT NULL
-  ORDER BY 1,2,3;
+  ORDER BY 2,3;
   
+  -- CTE
+  WITH PopvsVac (continent, location, `date`, population, new_vaccinations, rolling_count)
+  AS (
+  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(vac.new_vaccinations, DECIMAL)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.`date`) AS rolling_count/*,
+  (rolling_count / population) * 100 */
+    FROM covid_deaths dea
+    JOIN covid_vaccinations vac
+      ON dea.location = vac.location
+      AND dea.date = vac.date
+  WHERE dea.continent IS NOT NULL);
   
+  SELECT *, (rolling_count / population) * 100 FROM PopvsVac;
+  
+  -- Temp table
+  DROP TABLE IF EXCEPT percentpopulationvaccinated
+  CREATE TEMPORARY TABLE percentpopulationvaccinated
+  (
+    continent VARCHAR(255),
+    location VARCHAR(255),
+    `date` VARCHAR(255),
+    population DECIMAL,
+    new_vaccinations DECIMAL,
+    rolling_count DECIMAL
+  );
+  
+  INSERT INTO percentpopulationvaccinated
+    SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(vac.new_vaccinations, DECIMAL)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.`date`) AS rolling_count/*,
+    (rolling_count / population) * 100 */
+      FROM covid_deaths dea
+      JOIN covid_vaccinations vac
+        ON dea.location = vac.location
+        AND dea.date = vac.date
+    WHERE dea.continent IS NOT NULL;
+  
+  SELECT *, (rolling_count / population) * 100 FROM percentpopulationvaccinated;
+  
+  -- View to store data for later visualizations
+  
+  CREATE VIEW percent_of_populationvaccinated AS
+  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(vac.new_vaccinations, DECIMAL)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.`date`) AS rolling_count/*,
+  (rolling_count / population) * 100 */
+    FROM covid_deaths dea
+    JOIN covid_vaccinations vac
+      ON dea.location = vac.location
+      AND dea.date = vac.date
+  WHERE dea.continent IS NOT NULL;
   
   
   
